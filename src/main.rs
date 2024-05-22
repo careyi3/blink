@@ -24,7 +24,14 @@ fn main() -> ! {
     let mut pwr = dp.PWR.constrain(&mut rcc.apb1r1);
 
     rprintln!("Configuring clock...");
-    let clocks = rcc.cfgr.sysclk(64.MHz()).freeze(&mut flash.acr, &mut pwr);
+    let clocks = rcc
+        .cfgr
+        .lse(
+            hal::rcc::CrystalBypass::Disable,
+            hal::rcc::ClockSecuritySystem::Disable,
+        )
+        .sysclk(64.MHz())
+        .freeze(&mut flash.acr, &mut pwr);
 
     rprintln!("Configuring GPIO...");
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb2);
