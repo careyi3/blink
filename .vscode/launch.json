@@ -8,7 +8,7 @@
       "flashingConfig": {
         "flashingEnabled": true,
       },
-      "chip": "STM32L432KB",
+      "chip": "STM32F411CEUx",
       "coreConfigs": [
         {
           "programBinary": "./target/thumbv7em-none-eabihf/debug/blink",

@@ -1,6 +1,6 @@
 # Blink
 
-An app to blink an LED on an STM32L432 written in Rust.
+An app to blink an LED on an STM32F411 written in Rust.
 
 ## Set Up
 

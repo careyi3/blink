@@ -1,55 +1,41 @@
-#![no_std]
 #![no_main]
+#![no_std]
 
-extern crate cortex_m;
-extern crate cortex_m_rt as rt;
 use panic_rtt_target as _;
-extern crate stm32l4xx_hal as hal;
-use crate::hal::delay::Delay;
-use crate::hal::prelude::*;
-use crate::rt::entry;
 use rtt_target::{rprintln, rtt_init_print};
+
+use cortex_m_rt::entry;
+use stm32f4xx_hal as hal;
+use stm32f4xx_hal::rtc::Rtc;
+
+use crate::hal::{pac, prelude::*};
 
 #[entry]
 fn main() -> ! {
     rtt_init_print!();
     rprintln!("Starting...");
 
-    rprintln!("Configuring peripherals...");
-    let cp = cortex_m::Peripherals::take().unwrap();
-    let dp = hal::stm32::Peripherals::take().unwrap();
+    if let (Some(mut dp), Some(_)) = (
+        pac::Peripherals::take(),
+        cortex_m::peripheral::Peripherals::take(),
+    ) {
+        let gpioa = dp.GPIOA.split();
+        let mut led = gpioa.pa5.into_push_pull_output();
 
-    let mut flash = dp.FLASH.constrain();
-    let mut rcc = dp.RCC.constrain();
-    let mut pwr = dp.PWR.constrain(&mut rcc.apb1r1);
+        rprintln!("Configuring clock...");
+        let rcc = dp.RCC.constrain();
+        let clocks = rcc.cfgr.freeze();
+        Rtc::new(dp.RTC, &mut dp.PWR);
 
-    rprintln!("Configuring clock...");
-    let clocks = rcc
-        .cfgr
-        .lse(
-            hal::rcc::CrystalBypass::Disable,
-            hal::rcc::ClockSecuritySystem::Disable,
-        )
-        .sysclk(64.MHz())
-        .freeze(&mut flash.acr, &mut pwr);
+        rprintln!("Configuring timer...");
+        let mut delay = dp.TIM5.delay_us(&clocks);
 
-    rprintln!("Configuring GPIO...");
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb2);
-    let mut led = gpiob
-        .pb5
-        .into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
-
-    rprintln!("Configuring timer...");
-    let mut timer = Delay::new(cp.SYST, clocks);
-
-    rprintln!("Configured!");
-    rprintln!("Starting Loop.");
-    loop {
-        timer.delay_ms(1000_u32);
-        led.set_high();
-        rprintln!("On");
-        timer.delay_ms(1000_u32);
-        led.set_low();
-        rprintln!("Off");
+        loop {
+            rprintln!("Toggle");
+            led.toggle();
+            delay.delay_ms(1000);
+        }
     }
+
+    loop {}
 }
